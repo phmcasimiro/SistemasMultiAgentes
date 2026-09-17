@@ -1,7 +1,7 @@
 import os
 import requests
-from agents import Agent, Runner, function_tool
-from provedor import configurar  #[cite: 1, 2]
+from agents import Agent, function_tool
+from provedor import configurar, modelo, rodar
 
 # Paleta de cores e estilos ANSI nativos (Linux / Bash)
 RESET = "\033[0m"
@@ -13,8 +13,8 @@ YELLOW = "\033[33m"
 BLUE = "\033[34m"
 LINE = "─" * 70
 
-# 1. Inicializa o provedor configurado no .env (Ollama/OpenAI)[cite: 1, 2]
-configurar()  #[cite: 1, 2]
+# 1. Inicializa o provedor configurado no .env (Zen/Ollama/OpenAI)
+configurar()
 
 
 @function_tool
@@ -43,35 +43,33 @@ def get_cotacao_dolar_hoje() -> str:
     return f"Data de referência: {data_referencia} | 1 USD = R$ {taxa_brl:.4f}"
 
 
-# 2. Agente focado exclusivamente na cotação do dia
-agente_cambio = Agent(
-    name="Analista de Câmbio",
-    instructions=(
-        "Você é um assistente financeiro direto e objetivo. "
-        "Sua ÚNICA ação inicial DEVE ser executar a ferramenta 'get_cotacao_dolar_hoje'. "
-        "NUNCA imprima JSON ou a sintaxe da tool como texto puro. "
-        "Com o dado retornado, informe ao usuário a data de referência oficial do Banco Central Europeu "
-        "e o valor da cotação do Dólar em Reais."
-    ),
-    model=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),  #
-    tools=[get_cotacao_dolar_hoje],
-)
+# 2. Fábrica do agente, focado exclusivamente na cotação do dia.
+def criar_agente() -> Agent:
+    return Agent(
+        name="Analista de Câmbio",
+        instructions=(
+            "Você é um assistente financeiro direto e objetivo. "
+            "Sua ÚNICA ação inicial DEVE ser executar a ferramenta 'get_cotacao_dolar_hoje'. "
+            "NUNCA imprima JSON ou a sintaxe da tool como texto puro. "
+            "Com o dado retornado, informe ao usuário a data de referência oficial do Banco Central Europeu "
+            "e o valor da cotação do Dólar em Reais."
+        ),
+        model=modelo(),
+        tools=[get_cotacao_dolar_hoje],
+    )
 
 
 # 3. Execução e saída com ANSI nativo
 def main():
     print(f"\n{BLUE}{LINE}{RESET}")
-    print(f"{BOLD}{CYAN}🤖 AGENTE EM EXECUÇÃO:{RESET} {agente_cambio.name}")
-    print(f"{DIM}Modelo ativo: {os.getenv('OLLAMA_MODEL', 'llama3.2:3b')}{RESET}")  #[cite: 1]
+    print(f"{BOLD}{CYAN}🤖 AGENTE EM EXECUÇÃO:{RESET} {criar_agente().name}")
+    print(f"{DIM}Modelo ativo: {modelo()}{RESET}")
     print(f"{BLUE}{LINE}{RESET}")
 
-    resultado = Runner.run_sync(
-        agente_cambio,
-        "Qual é a cotação do dólar hoje?",
-    )
+    resultado = rodar(criar_agente, "Qual é a cotação do dólar hoje?")
 
     print(f"\n{BOLD}{GREEN}💵 COTAÇÃO ATUALIZADA:{RESET}\n")
-    print(resultado.final_output)  #[cite: 1]
+    print(resultado.final_output)
 
     print(f"\n{BLUE}{LINE}{RESET}")
     print(f"{GREEN}✔ Execução concluída{RESET}")

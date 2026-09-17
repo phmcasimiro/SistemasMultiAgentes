@@ -1,7 +1,7 @@
 import requests
 
-from agents import Agent, Runner, function_tool, ModelSettings
-from provedor import configurar
+from agents import Agent, function_tool, ModelSettings
+from provedor import configurar, modelo, rodar
 
 
 # 1. Configuração do provedor
@@ -40,22 +40,24 @@ def converter_moeda(
     )
 
 
-# 3. Agente
-agente = Agent(
-    name="Agente Financeiro",
+# 3. Fábrica do agente (modelo do provedor ativo)
+def criar_agente() -> Agent:
+    return Agent(
+        name="Agente Financeiro",
 
-    instructions=(
-        "Você é um agente financeiro especializado em conversão de moedas. "
-        "Sempre use converter_moeda para realizar conversões. "
-        "Nunca invente cotações."
-    ),
+        instructions=(
+            "Você é um agente financeiro especializado em conversão de moedas. "
+            "Sempre use converter_moeda para realizar conversões. "
+            "Nunca invente cotações."
+        ),
 
-    tools=[converter_moeda],
+        model=modelo(),
+        tools=[converter_moeda],
 
-    model_settings=ModelSettings(
-        tool_choice="required"
+        model_settings=ModelSettings(
+            tool_choice="required"
+        )
     )
-)
 
 
 # 4. Execução
@@ -63,10 +65,7 @@ def main():
 
     print("Iniciando agente...")
 
-    resultado = Runner.run_sync(
-        agente,
-        "Quanto são 100 dólares em reais?"
-    )
+    resultado = rodar(criar_agente, "Quanto são 100 dólares em reais?")
 
     print("\nResposta:")
     print(resultado.final_output)

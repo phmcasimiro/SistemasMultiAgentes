@@ -1,10 +1,10 @@
 import os
 import requests  # 1. Importação necessária para as requisições HTTP
-from agents import Agent, Runner, function_tool
-from provedor import configurar  #[cite: 1, 2]
+from agents import Agent, function_tool
+from provedor import configurar, modelo, rodar
 
-# 2. Inicializa a infraestrutura de inferência (Ollama/OpenAI)[cite: 1, 2]
-configurar()  #[cite: 1, 2]
+# 2. Inicializa a infraestrutura de inferência (Zen/Ollama/OpenAI)
+configurar()
 
 
 @function_tool
@@ -39,22 +39,20 @@ def get_temperatura(cidade: str) -> float:
     return prev["current"]["temperature_2m"]
 
 
-# 3. Instanciação do agente com a ferramenta e o modelo corretos
-agente = Agent(
-    name="Agente Meteorológico",
-    instructions="Você é um assistente meteorológico. Use a ferramenta get_temperatura sempre que o usuário perguntar sobre clima ou temperatura.",
-    model=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),  #[cite: 1]
-    tools=[get_temperatura],  # Registra a tool no agente
-)
+# 3. Fábrica do agente com a ferramenta e o modelo do provedor ativo.
+def criar_agente() -> Agent:
+    return Agent(
+        name="Agente Meteorológico",
+        instructions="Você é um assistente meteorológico. Use a ferramenta get_temperatura sempre que o usuário perguntar sobre clima ou temperatura.",
+        model=modelo(),
+        tools=[get_temperatura],  # Registra a tool no agente
+    )
 
 
 def main():
-    # 4. Execução do Runner e impressão da resposta final
-    resultado = Runner.run_sync(
-        agente,
-        "Qual é o clima em São Paulo?",
-    )
-    print(resultado.final_output)  #[cite: 1]
+    # 4. Execução do Runner (com recuo para Ollama) e impressão da resposta final
+    resultado = rodar(criar_agente, "Qual é o clima em São Paulo?")
+    print(resultado.final_output)
 
 
 if __name__ == "__main__":
