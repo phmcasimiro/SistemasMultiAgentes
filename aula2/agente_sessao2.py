@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Coloca a raiz do curso no sys.path para importar provedor (e o .env) de qualquer aula.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from agents import Agent, Runner, SQLiteSession, function_tool
 
 import requests
