@@ -33,7 +33,7 @@ Esta aula dá o passo central da disciplina de Sistemas Multiagentes: fazer múl
 
 ## 2. O Problema: um Agente Não Sabe de Tudo
 
-Um único agente é limitado pelo seu contexto e instruções. Para responder perguntas de áreas distintas (matemática, história, etc.), a solução é **decompor o problema em especialistas** e ter um **agente orquestrador** (triador) que roteia cada pergunta para o especialista certo.
+Um único agente é limitado pelo seu contexto e instruções. Para responder perguntas de áreas distintas (matemática, história, etc.), a solução é **decompor o problema em especialistas** e ter um **agente orquestrador** (triador) que roteia cada pergunta para o especialista certo. *(arquivos: `agente_handoff.py`, `agente_handoff2.py`)*
 
 A aula apresenta **duas maneiras** de implementar essa coordenação:
 
@@ -77,9 +77,9 @@ def executar_agente_handoff(mensagem: str) -> str:
     return resultado.final_output
 ```
 
-* **`handoff_description`:** texto que o agente triador lê para *saber quando* delegar a um especialista. É a "placa de sinalização" de cada destino.
-* **`handoffs=[...]`:** lista de agentes disponíveis para delegação. O triador escolhe um deles, e o turno é transferido — o especialista responde diretamente ao usuário.
-* **Saída do fluxo:** o resultado final vem do agente especialista que recebeu o turno.
+* **`handoff_description`:** texto que o agente triador lê para *saber quando* delegar a um especialista. É a "placa de sinalização" de cada destino. *(arquivo: `agente_handoff.py`)*
+* **`handoffs=[...]`:** lista de agentes disponíveis para delegação. O triador escolhe um deles, e o turno é transferido — o especialista responde diretamente ao usuário. *(arquivo: `agente_handoff.py`)*
+* **Saída do fluxo:** o resultado final vem do agente especialista que recebeu o turno. *(arquivo: `agente_handoff.py`)*
 
 ---
 
@@ -131,9 +131,9 @@ def executar_agente_handoff2(mensagem: str) -> str:
     return resultado.final_output
 ```
 
-* **`agente.as_tool(tool_name=..., tool_description=...)`:** transforma o agente especialista em uma ferramenta registrada nas `tools` do triador. O `tool_description` cumpre o papel do `handoff_description`: informa ao triador *quando* usar aquele especialista.
-* **Fluxo:** o triador decide se chama `consultar_matematico` ou `consultar_historiador`; a resposta do especialista volta como resultado da ferramenta e o **triador** compõe a resposta final.
-* **Diferença essencial:** no *handoff*, o especialista "assume" a resposta final; no *agente como ferramenta*, o triador continua no comando e apenas consome o retorno do especialista.
+* **`agente.as_tool(tool_name=..., tool_description=...)`:** transforma o agente especialista em uma ferramenta registrada nas `tools` do triador. O `tool_description` cumpre o papel do `handoff_description`: informa ao triador *quando* usar aquele especialista. *(arquivo: `agente_handoff2.py`)*
+* **Fluxo:** o triador decide se chama `consultar_matematico` ou `consultar_historiador`; a resposta do especialista volta como resultado da ferramenta e o **triador** compõe a resposta final. *(arquivo: `agente_handoff2.py`)*
+* **Diferença essencial:** no *handoff*, o especialista "assume" a resposta final; no *agente como ferramenta*, o triador continua no comando e apenas consome o retorno do especialista. *(arquivo: `agente_handoff2.py`)*
 
 ---
 
@@ -180,11 +180,11 @@ def extrair_ocorrencia(texto: str) -> Ocorrencia:
     return resultado.final_output
 ```
 
-* **`output_type=Ocorrencia`:** o framework traduz o schema Pydantic em JSON Schema e instrui o modelo a retornar somente JSON válido conforme esse schema. O `final_output` passa a ser uma instância de `Ocorrencia`, não uma string.
-* **Modelos aninhados (`list[Envolvido]`):** o agente identifica cada pessoa citada no relato e a classifica (vítima/suspeito/testemunha), gerando uma lista estruturada.
-* **Consumo do resultado:** a instância pode ser serializada com `.model_dump()` (dict) ou `.model_dump_json()` (string), pronta para resposta HTTP ou persistência.
+* **`output_type=Ocorrencia`:** o framework traduz o schema Pydantic em JSON Schema e instrui o modelo a retornar somente JSON válido conforme esse schema. O `final_output` passa a ser uma instância de `Ocorrencia`, não uma string. *(arquivo: `agente_bo.py`)*
+* **Modelos aninhados (`list[Envolvido]`):** o agente identifica cada pessoa citada no relato e a classifica (vítima/suspeito/testemunha), gerando uma lista estruturada. *(arquivo: `agente_bo.py`)*
+* **Consumo do resultado:** a instância pode ser serializada com `.model_dump()` (dict) ou `.model_dump_json()` (string), pronta para resposta HTTP ou persistência. *(arquivo: `agente_bo.py`)*
 
-**Variação mais simples — `agente_output.py`:** o mesmo padrão, mas com um modelo de campos simples (`Evento`: `nome`, `data`, `local`, `participantes: int`), sem modelo aninhado. Útil quando os dados extraídos são planos.
+**Variação mais simples — `agente_output.py`:** o mesmo padrão, mas com um modelo de campos simples (`Evento`: `nome`, `data`, `local`, `participantes: int`), sem modelo aninhado. Útil quando os dados extraídos são planos. *(arquivo: `agente_output.py`)*
 
 ```python
 class Evento(BaseModel):
@@ -336,7 +336,7 @@ python -m aula2.agente_producao       # max_turns + prompt injection (9)
 
 ### 8.1 Memória de conversa — `SQLiteSession` (Seção 5)
 
-Cada `Runner.run` é, por padrão, um atendente novo: o agente esquece o turno anterior. A `SQLiteSession(id)` guarda o histórico sob um identificador e o reinjeta a cada chamada. Sem `db_path` é `:memory:` (RAM); com `db_path` persiste em arquivo.
+Cada `Runner.run` é, por padrão, um atendente novo: o agente esquece o turno anterior. A `SQLiteSession(id)` guarda o histórico sob um identificador e o reinjeta a cada chamada. Sem `db_path` é `:memory:` (RAM); com `db_path` persiste em arquivo. *(arquivos: `agente_session.py`, `agente_sessao2.py`, `agente_memoria.py`)*
 
 * **`agente_session.py`** — memória entre turnos com persistência em arquivo.
 * **`agente_sessao2.py`** — memória + ferramenta de clima: no 3º turno o agente compara as duas cidades **sem nova chamada de API**.
@@ -346,30 +346,30 @@ Cada `Runner.run` é, por padrão, um atendente novo: o agente esquece o turno a
 
 ### 8.2 Guardrails (Seção 6)
 
-Travas que rodam em paralelo ao agente: um `input_guardrail` inspeciona o pedido **antes** de gastar tokens; um `output_guardrail` inspeciona a resposta **antes** de sair. Se a trava detecta algo proibido, dispara o *tripwire* e a execução para com exceção.
+Travas que rodam em paralelo ao agente: um `input_guardrail` inspeciona o pedido **antes** de gastar tokens; um `output_guardrail` inspeciona a resposta **antes** de sair. Se a trava detecta algo proibido, dispara o *tripwire* e a execução para com exceção. *(arquivos: `agente_guardrail.py`, `agente_output_guardrail.py`)*
 
 * **`agente_guardrail.py`** — `input_guardrail` com LLM: um agente classificador (`output_type`) avalia similaridade a tópicos proibidos e dispara o tripwire.
 * **`agente_output_guardrail.py`** — `output_guardrail` com **regex** de CPF (sem LLM): barra respostas que vazam um CPF.
 
 ### 8.3 Streaming (Seção 7)
 
-`Runner.run_streamed` devolve um iterador assíncrono de eventos. Filtramos os eventos de texto cru (`raw_response_event` + `ResponseTextDeltaEvent`) para "ver o agente digitando", e os eventos de itens (`run_item_stream_event`) para o ciclo de vida da ferramenta.
+`Runner.run_streamed` devolve um iterador assíncrono de eventos. Filtramos os eventos de texto cru (`raw_response_event` + `ResponseTextDeltaEvent`) para "ver o agente digitando", e os eventos de itens (`run_item_stream_event`) para o ciclo de vida da ferramenta. *(arquivo: `agente_streaming.py`)*
 
 * **`agente_streaming.py`** — tokens um a um, ciclo de vida da tool (`tool_call_item` / `tool_call_output_item`) e o instante do handoff (`agent_updated_stream_event`).
 
 ### 8.4 Integrador (Seção 8)
 
-Combina todas as capacidades num único agente: **tool + sessão + guardrail + `output_type`**. 
+Combina todas as capacidades num único agente: **tool + sessão + guardrail + `output_type`**. *(arquivo: `agente_integrador.py`)*
 
 * **`agente_integrador.py`** — agente com ferramenta de clima, `input_guardrail` de LGPD, `SQLiteSession` e `output_type=Atendimento`. **Atenção:** como o guardrail é `async` e usa `await Runner.run(...)`, o `run_sync` **quebra** aqui — use a versão assíncrona.
 
 ### 8.5 Limites, segurança e produção (Seção 9)
 
-* **`max_turns`** — um turno = o modelo decide responder OU chamar ferramenta. `Runner.run(..., max_turns=N)`, padrão 10; estourou → `MaxTurnsExceeded`.
-* **Prompt injection indireta** — ataque que vem de *dentro* das ferramentas (um PDF/e-mail lido com "IGNORE suas instruções..."). Trate o conteúdo de ferramentas como dado não confiável.
+* **`max_turns`** — um turno = o modelo decide responder OU chamar ferramenta. `Runner.run(..., max_turns=N)`, padrão 10; estourou → `MaxTurnsExceeded`. *(arquivo: `agente_producao.py`)*
+* **Prompt injection indireta** — ataque que vem de *dentro* das ferramentas (um PDF/e-mail lido com "IGNORE suas instruções..."). Trate o conteúdo de ferramentas como dado não confiável. *(arquivo: `agente_producao.py`)*
 * **Quando não usar um agente** — consulta determinística (validar CPF, somar) → código comum, mais rápido e testável.
-* **Ação consequente exige aprovação humana** — quando a tool *escreve*, o padrão é: propõe → humano aprova → só então roda.
-* **`agente_producao.py`** — demonstra `max_turns` (estourando o limite) e a defesa contra prompt injection.
+* **Ação consequente exige aprovação humana** — quando a tool *escreve*, o padrão é: propõe → humano aprova → só então roda. *(arquivo em `aula3`: `agente_aprovacao.py`)*
+* **`agente_producao.py`** — demonstra `max_turns` (estourando o limite) e a defesa contra prompt injection. *(arquivo: `agente_producao.py`)*
 
 ---
 

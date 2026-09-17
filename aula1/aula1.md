@@ -11,7 +11,7 @@ Esta aula consolida os conceitos teóricos e a engenharia de software por trás 
 
 Um Modelo de Linguagem de Grande Porte (LLM) isolado é uma função matemática probabilística que recebe uma sequência de tokens e calcula a distribuição dos próximos tokens. Ele é **stateless** (sem memória persistente) e **passivo** (responde estritamente a um estímulo).
 
-Um **Agente de IA** é um sistema computacional que utiliza o LLM como núcleo decisório, orquestrado por um runtime que gerencia contexto, ferramentas e objetivos:
+Um **Agente de IA** é um sistema computacional que utiliza o LLM como núcleo decisório, orquestrado por um runtime que gerencia contexto, ferramentas e objetivos: *(a Fase 0, `agente1_gemini.py`, materializa a diferença na prática — o LLM "puro" com memória manual)*
 
 | Dimensão | LLM Convencional (ex: `chat.completions`) | Agente de IA (ex: `Agent` + `Runner`) |
 |---|---|---|
@@ -117,10 +117,10 @@ def rodar(agente_fabrica, mensagem):
 
 ### Decisões Críticas de Arquitetura:
 
-* **Padronização sobre a API OpenAI:** Servidores locais (Ollama, vLLM) e provedores em nuvem (OpenCode Zen, Gemini, DeepSeek) adotam a especificação REST da OpenAI (`/v1`), permitindo reutilizar o mesmo SDK apenas alterando a `base_url`.
-* **`set_default_openai_api("chat_completions")`:** O Agents SDK tenta usar por padrão a rota `/responses`. O Ollama, o Zen e endpoints de compatibilidade implementam apenas a rota consolidada `/v1/chat/completions`. Esta diretiva evita erros `404 Not Found`.
-* **`set_tracing_disabled(True)`:** Previne tentativas do SDK de exportar telemetria para a plataforma da OpenAI usando chaves locais ou inválidas, o que geraria falhas `401 Unauthorized` em segundo plano.
-* **`modelo()` e `rodar()` — desacoplamento de modelo + resiliência:** Os agentes não fixam mais o nome do modelo; eles o obtêm via `modelo()`, que retorna `OPENAI_MODEL` quando o provedor ativo é o Zen e `OLLAMA_MODEL` caso contrário. O runner `rodar()` tenta a chamada pelo provedor principal (Zen) e, diante de qualquer exceção, **recua automaticamente para o Ollama local** (`cair_para_ollama()`), reconstruindo o agente com o modelo correto antes da segunda tentativa.
+* **Padronização sobre a API OpenAI:** Servidores locais (Ollama, vLLM) e provedores em nuvem (OpenCode Zen, Gemini, DeepSeek) adotam a especificação REST da OpenAI (`/v1`), permitindo reutilizar o mesmo SDK apenas alterando a `base_url`. *(arquivo: `provedor.py` na raiz)*
+* **`set_default_openai_api("chat_completions")`:** O Agents SDK tenta usar por padrão a rota `/responses`. O Ollama, o Zen e endpoints de compatibilidade implementam apenas a rota consolidada `/v1/chat/completions`. Esta diretiva evita erros `404 Not Found`. *(arquivo: `provedor.py` na raiz)*
+* **`set_tracing_disabled(True)`:** Previne tentativas do SDK de exportar telemetria para a plataforma da OpenAI usando chaves locais ou inválidas, o que geraria falhas `401 Unauthorized` em segundo plano. *(arquivo: `provedor.py` na raiz)*
+* **`modelo()` e `rodar()` — desacoplamento de modelo + resiliência:** Os agentes não fixam mais o nome do modelo; eles o obtêm via `modelo()`, que retorna `OPENAI_MODEL` quando o provedor ativo é o Zen e `OLLAMA_MODEL` caso contrário. O runner `rodar()` tenta a chamada pelo provedor principal (Zen) e, diante de qualquer exceção, **recua automaticamente para o Ollama local** (`cair_para_ollama()`), reconstruindo o agente com o modelo correto antes da segunda tentativa. *(arquivo: `provedor.py` na raiz)*
 
 ---
 
@@ -174,9 +174,9 @@ if __name__ == "__main__":
     print(f"[{agente_pesquisa.nome}]: {resposta}")
 ```
 
-* **Memória manual (`self.mensagens`):** Como o LLM é `stateless`, todo o histórico é acumulado em uma lista e reenviado a cada chamada — o papel do `system` define a persona, e os turnos `user`/`assistant` preservam o contexto.
-* **`base_url` para o Gemini:** O mesmo cliente `OpenAI` funciona contra `generativelanguage.googleapis.com/v1beta/openai/` sem trocar de SDK, reforçando o desacoplamento de provedores discutido na seção 2.
-* **Limitação:** Sem o runtime de um framework, orquestração, ferramentas e retry ficam por conta do desenvolvedor — é o que o Agents SDK passa a automatizar nas fases seguintes.
+* **Memória manual (`self.mensagens`):** Como o LLM é `stateless`, todo o histórico é acumulado em uma lista e reenviado a cada chamada — o papel do `system` define a persona, e os turnos `user`/`assistant` preservam o contexto. *(arquivo: `agente1_gemini.py`)*
+* **`base_url` para o Gemini:** O mesmo cliente `OpenAI` funciona contra `generativelanguage.googleapis.com/v1beta/openai/` sem trocar de SDK, reforçando o desacoplamento de provedores discutido na seção 2. *(arquivo: `agente1_gemini.py`)*
+* **Limitação:** Sem o runtime de um framework, orquestração, ferramentas e retry ficam por conta do desenvolvedor — é o que o Agents SDK passa a automatizar nas fases seguintes. *(arquivo: `agente1_gemini.py`)*
 
 ---
 
@@ -211,9 +211,9 @@ if __name__ == "__main__":
     main()
 ```
 
-* **Encapsulamento no `main()`:** Garante que o script possa ser importado por outros módulos orquestradores sem disparar requisições automáticas no momento do `import`.
-* **Fábrica `criar_agente()`:** Como o `rodar()` precisa reconstruir o agente com o modelo do provedor após um recuo, a construção é isolada em uma função sem argumentos que usa `model=modelo()`.
-* **Saída direta (`resultado.final_output`):** Retorna o conteúdo textual final resolvido pelo loop do runner.
+* **Encapsulamento no `main()`:** Garante que o script possa ser importado por outros módulos orquestradores sem disparar requisições automáticas no momento do `import`. *(arquivo: `agente1.py`)*
+* **Fábrica `criar_agente()`:** Como o `rodar()` precisa reconstruir o agente com o modelo do provedor após um recuo, a construção é isolada em uma função sem argumentos que usa `model=modelo()`. *(arquivo: `agente1.py`)*
+* **Saída direta (`resultado.final_output`):** Retorna o conteúdo textual final resolvido pelo loop do runner. *(arquivo: `agente1.py`)*
 
 ---
 
@@ -282,8 +282,8 @@ if __name__ == "__main__":
     main()
 ```
 
-* **Assinatura e Docstrings:** O nome da função, as anotações de tipo (`cidade: str -> float`) e a docstring são lidos pelo framework para montar a especificação de chamada que orienta a IA.
-* **Execução em Duas Etapas:** A tool encadeia geocodificação (nome $\rightarrow$ coordenadas) e consulta meteorológica de forma imperceptível para o usuário final.
+* **Assinatura e Docstrings:** O nome da função, as anotações de tipo (`cidade: str -> float`) e a docstring são lidos pelo framework para montar a especificação de chamada que orienta a IA. *(arquivo: `agente2.py`)*
+* **Execução em Duas Etapas:** A tool encadeia geocodificação (nome $\rightarrow$ coordenadas) e consulta meteorológica de forma imperceptível para o usuário final. *(arquivo: `agente2.py`)*
 
 ---
 
@@ -461,8 +461,8 @@ if __name__ == "__main__":
     main()
 ```
 
-* **Extração de Argumentos Estruturados:** O modelo extrai dinamicamente múltiplos parâmetros a partir do comando em linguagem natural (`valor=100.0`, `moeda_origem="USD"`, `moeda_destino="BRL"`).
-* **`tool_choice="required"`:** Desativa a liberdade do LLM de responder com texto puro no primeiro turno, obrigando-o a emitir um payload estruturado para a ferramenta registrada.
+* **Extração de Argumentos Estruturados:** O modelo extrai dinamicamente múltiplos parâmetros a partir do comando em linguagem natural (`valor=100.0`, `moeda_origem="USD"`, `moeda_destino="BRL"`). *(arquivo: `agente4.py`)*
+* **`tool_choice="required"`:** Desativa a liberdade do LLM de responder com texto puro no primeiro turno, obrigando-o a emitir um payload estruturado para a ferramenta registrada. *(arquivo: `agente4.py`)*
 
 ---
 
@@ -535,7 +535,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.1 Seção 1 — O Primeiro Agente ✅
 
-**Teoria.** Um `Agent` é a definição de um funcionário: um modelo de linguagem + um conjunto de `instructions` (a "persona", que manda mais que o pedido do usuário). Sozinho ele não faz nada — quem executa é o `Runner`. `run_sync` devolve um objeto rico (`RunResult`), do qual se extrai o texto final com `.final_output`.
+**Teoria.** Um `Agent` é a definição de um funcionário: um modelo de linguagem + um conjunto de `instructions` (a "persona", que manda mais que o pedido do usuário). Sozinho ele não faz nada — quem executa é o `Runner`. `run_sync` devolve um objeto rico (`RunResult`), do qual se extrai o texto final com `.final_output`. *(arquivo: `agente1.py`)*
 
 **Exercícios:**
 - **1.1 Primeiro agente:** `Agent(name=..., instructions=...)` + `Runner.run_sync(...)`. Imprimir `resultado` (objeto inteiro) e `resultado.final_output` (só texto). ✅ `agente1.py`
@@ -544,7 +544,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.2 Seção 2 — Ferramentas (Tools) ✅ (parcial)
 
-**Teoria.** `@function_tool` transforma uma função Python comum em ferramenta: o schema (JSON Schema/OpenAPI) é gerado a partir da **assinatura** e da **docstring**. Por isso a docstring não é enfeite — o modelo a lê para decidir *quando* e *como* usar a ferramenta. Durante a execução, o próprio modelo decide chamá-la.
+**Teoria.** `@function_tool` transforma uma função Python comum em ferramenta: o schema (JSON Schema/OpenAPI) é gerado a partir da **assinatura** e da **docstring**. Por isso a docstring não é enfeite — o modelo a lê para decidir *quando* e *como* usar a ferramenta. Durante a execução, o próprio modelo decide chamá-la. *(arquivos: `agente2.py`, `agente3.py`, `agente4.py`)*
 
 **Exercícios:**
 - **2.1 Primeira ferramenta:** `@function_tool` + `tools=[...]` no agente. ✅
@@ -555,7 +555,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.3 Seção 3 — Handoff (Transferência entre Agentes) ⏳
 
-**Teoria.** *Handoff* é a transferência de uma conversa de um agente para outro. Por baixo dos panos, cada agente disponível vira uma ferramenta `transfer_to_<nome>` que o agente de origem pode chamar. O triador tem `handoffs=[...]` em vez de `tools=[...]`, e a decisão é só linguagem natural — nenhum `if/else` de roteamento. `resultado.last_agent` diz quem respondeu.
+**Teoria.** *Handoff* é a transferência de uma conversa de um agente para outro. Por baixo dos panos, cada agente disponível vira uma ferramenta `transfer_to_<nome>` que o agente de origem pode chamar. O triador tem `handoffs=[...]` em vez de `tools=[...]`, e a decisão é só linguagem natural — nenhum `if/else` de roteamento. `resultado.last_agent` diz quem respondeu. *(arquivos em `aula2`: `agente_handoff.py`, `agente_handoff2.py`)*
 
 **Exercícios:**
 - **3.1 Triador + especialistas:** `handoffs=[especialista_a, especialista_b]`; imprimir `resultado.last_agent.name`.
@@ -568,7 +568,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.4 Seção 4 — Saída Estruturada (`output_type`) ⏳
 
-**Teoria.** `output_type` obriga o modelo a devolver dados num formato fixo, validado por um modelo Pydantic, em vez de texto livre — um contrato que o resto do sistema consome sem *parsing* frágil de string. O SDK traduz o schema Pydantic em JSON Schema; `final_output` deixa de ser `str` e passa a ser uma instância do modelo declarado.
+**Teoria.** `output_type` obriga o modelo a devolver dados num formato fixo, validado por um modelo Pydantic, em vez de texto livre — um contrato que o resto do sistema consome sem *parsing* frágil de string. O SDK traduz o schema Pydantic em JSON Schema; `final_output` deixa de ser `str` e passa a ser uma instância do modelo declarado. *(arquivos em `aula2`: `agente_output.py`, `agente_bo.py`)*
 
 **Exercícios:**
 - **4.1 `output_type` com Pydantic:** `class Evento(BaseModel): ...`; `participantes: int` volta como `int` de verdade (não `"12"`). No `Agent`, usar `output_type=Evento`.
@@ -579,7 +579,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.5 Seção 5 — Sessão / Memória de Conversa ⏳
 
-**Teoria.** *Sessão* é a memória de conversa entre turnos. Sem ela, cada chamada ao `Runner` começa do zero. A `SQLiteSession` guarda o histórico sob um identificador e o reinjeta a cada novo turno. Sem `db_path`, ela é `:memory:` (mora na RAM); com `db_path=...`, persiste em arquivo.
+**Teoria.** *Sessão* é a memória de conversa entre turnos. Sem ela, cada chamada ao `Runner` começa do zero. A `SQLiteSession` guarda o histórico sob um identificador e o reinjeta a cada novo turno. Sem `db_path`, ela é `:memory:` (mora na RAM); com `db_path=...`, persiste em arquivo. *(arquivos em `aula2`: `agente_session.py`, `agente_sessao2.py`, `agente_memoria.py`)*
 
 **Exercícios:**
 - **5.1 `SQLiteSession` entre turnos:** `sessao = SQLiteSession("id")`; passar `session=sessao` em cada `run_sync`. "Ela" do 2º turno só funciona com o histórico.
@@ -590,7 +590,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.6 Seção 6 — Guardrails (Travas de Segurança) ⏳
 
-**Teoria.** Guardrails são travas que rodam em paralelo ao agente. Um `input_guardrail` inspeciona o pedido do usuário **antes** de gastar tokens com o agente principal; um `output_guardrail` inspeciona a resposta **antes** de ela sair. Se a trava detecta algo proibido, dispara o *tripwire* e a execução para com exceção.
+**Teoria.** Guardrails são travas que rodam em paralelo ao agente. Um `input_guardrail` inspeciona o pedido do usuário **antes** de gastar tokens com o agente principal; um `output_guardrail` inspeciona a resposta **antes** de ela sair. Se a trava detecta algo proibido, dispara o *tripwire* e a execução para com exceção. *(arquivos em `aula2`: `agente_guardrail.py`, `agente_output_guardrail.py`)*
 
 **Exercícios:**
 - **6.1 Input guardrail (Python puro):** `@input_guardrail` com uma lista de palavras proibidas; retornar `GuardrailFunctionOutput(output_info={}, tripwire_triggered=bool)`.
@@ -599,7 +599,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.7 Seção 7 — Streaming (Resposta em Tempo Real) ⏳
 
-**Teoria.** Streaming é receber a resposta do agente em pedaços (eventos), à medida que o modelo gera cada token, em vez de esperar a resposta inteira pronta. `Runner.run_streamed` devolve um iterador assíncrono de eventos; `stream_events()` é um gerador assíncrono (`async for`).
+**Teoria.** Streaming é receber a resposta do agente em pedaços (eventos), à medida que o modelo gera cada token, em vez de esperar a resposta inteira pronta. `Runner.run_streamed` devolve um iterador assíncrono de eventos; `stream_events()` é um gerador assíncrono (`async for`). *(arquivo em `aula2`: `agente_streaming.py`)*
 
 **Exercícios:**
 - **7.1 Tokens um a um:** `run_streamed` (sem `await`) + `stream_events()`; filtrar `event.type == "raw_response_event"` e `isinstance(event.data, ResponseTextDeltaEvent)`, imprimindo `event.data.delta`.
@@ -608,13 +608,13 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.8 Seção 8 — Integrador (Tudo Junto) ⏳
 
-**Teoria.** Não é uma capacidade nova do SDK, e sim a combinação das anteriores num único agente: **tools + handoff + saída estruturada + memória de sessão** — o atendimento completo. A observação do professor: quando um `guardrail` é `async` e usa `await Runner.run(...)`, o `run_sync` quebra — é preciso usar a versão assíncrona.
+**Teoria.** Não é uma capacidade nova do SDK, e sim a combinação das anteriores num único agente: **tools + handoff + saída estruturada + memória de sessão** — o atendimento completo. A observação do professor: quando um `guardrail` é `async` e usa `await Runner.run(...)`, o `run_sync` quebra — é preciso usar a versão assíncrona. *(arquivo em `aula2`: `agente_integrador.py`)*
 
 **Exercício:** montar um agente com `tools=[...]`, `input_guardrails=[...]`, `output_type=...` e uma `SQLiteSession`, e exercitar: turno 1 → ferramenta; turno 2 → memória; turno 3 → guardrail barra.
 
 ### 7.9 Seção 9 — Limites, Segurança e Produção ⏳
 
-**Teoria.** Não é sobre uma classe do SDK, e sim sobre o que separa um protótipo de aula de um sistema em produção: tracing/observabilidade, custo e limites de uso, tratamento de erro, e onde os guardrails realmente importam quando o dado é sensível (LGPD).
+**Teoria.** Não é sobre uma classe do SDK, e sim sobre o que separa um protótipo de aula de um sistema em produção: tracing/observabilidade, custo e limites de uso, tratamento de erro, e onde os guardrails realmente importam quando o dado é sensível (LGPD). *(arquivo em `aula2`: `agente_producao.py`)*
 
 **Conceitos-chave:**
 - **O loop do agente e `max_turns`:** um turno = o modelo decide responder OU chamar ferramenta → se chamou, o `Runner` executa e devolve → decide de novo. `Runner.run(..., max_turns=N)`, padrão 10; estourou → `MaxTurnsExceeded`.
@@ -624,7 +624,7 @@ Cada seção do deck propõe exercícios. Abaixo, os exercícios ganham contexto
 
 ### 7.10 Extra — Expor um Agente como API (FastAPI) ✅ (em `aula2`)
 
-**Teoria.** FastAPI não substitui o `Agent` — é a porta HTTP de entrada. Uma rota recebe uma mensagem, chama `Runner.run_sync(agente, mensagem)` e devolve `resultado.final_output` em JSON. Arquitetura: `Cliente → FastAPI → Agent → Runner → LLM`. O Pydantic valida entrada/saída e o `/docs` (Swagger) documenta a integração. **Ponto-chave:** a API não chama a tool — o agente decide.
+**Teoria.** FastAPI não substitui o `Agent` — é a porta HTTP de entrada. Uma rota recebe uma mensagem, chama `Runner.run_sync(agente, mensagem)` e devolve `resultado.final_output` em JSON. Arquitetura: `Cliente → FastAPI → Agent → Runner → LLM`. O Pydantic valida entrada/saída e o `/docs` (Swagger) documenta a integração. **Ponto-chave:** a API não chama a tool — o agente decide. *(arquivo em `aula2`: `main.py`)*
 
 **Estrutura:** `provedor.py` (configuração) + `agente.py` (Agent + tool + `executar_agente(mensagem)`) + `main.py` (FastAPI com `POST /perguntar`).
 

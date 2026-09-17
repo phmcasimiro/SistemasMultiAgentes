@@ -28,13 +28,13 @@ Esta aula muda o foco de *conhecer o agente* para *controlar o loop*. A Aula 1 a
 
 ## 1. O Loop por Baixo dos Panos (Hooks)
 
-**Teoria.** Por padrão o loop é caixa-preta: só se vê o resultado final. `RunHooks` permite enxergar cada turno em tempo real. `on_llm_start` dispara **uma vez por chamada ao modelo** — isso sinaliza o custo (um turno com ferramenta gera mais de uma chamada).
+**Teoria.** Por padrão o loop é caixa-preta: só se vê o resultado final. `RunHooks` permite enxergar cada turno em tempo real. `on_llm_start` dispara **uma vez por chamada ao modelo** — isso sinaliza o custo (um turno com ferramenta gera mais de uma chamada). *(arquivos: `agente_loop.py`, `agente_hook1.py`)*
 
-**Ponto importante:** `on_agent_start` **não é contador de turno** — ele dispara "cada vez que o agente ativo muda" (ou seja, em *handoff*). Com um agente único (sem handoff), dispara **uma vez só**, mesmo que o loop rode vários turnos por dentro.
+**Ponto importante:** `on_agent_start` **não é contador de turno** — ele dispara "cada vez que o agente ativo muda" (ou seja, em *handoff*). Com um agente único (sem handoff), dispara **uma vez só**, mesmo que o loop rode vários turnos por dentro. *(arquivo: `agente_loop.py`)*
 
-**Exemplo real (API + conversão encadeada):** `get_temperatura` + `converter_para_fahrenheit`. Nenhuma linha do código diz "primeiro chame X, depois Y" — quem decide a ordem, turno a turno, é o modelo, seguindo a instrução em linguagem natural.
+**Exemplo real (API + conversão encadeada):** `get_temperatura` + `converter_para_fahrenheit`. Nenhuma linha do código diz "primeiro chame X, depois Y" — quem decide a ordem, turno a turno, é o modelo, seguindo a instrução em linguagem natural. *(arquivo: `agente_loop.py`)*
 
-**Instruções > pedido do usuário:** se as `instructions` dizem "SEMPRE em Fahrenheit, nunca em Celsius", o modelo trata como regra fixa — mesmo que o usuário peça em Celsius.
+**Instruções > pedido do usuário:** se as `instructions` dizem "SEMPRE em Fahrenheit, nunca em Celsius", o modelo trata como regra fixa — mesmo que o usuário peça em Celsius. *(arquivo: `agente_loop.py`)*
 
 **Exercícios:**
 - **1.1 Tornar o loop visível com hooks:** usar `RunHooks` para registrar cada chamada ao modelo e cada tool. ✅ `agente_loop.py`
@@ -72,10 +72,10 @@ python -m aula3.agente_clima_vento
 **Teoria.** Hooks são sensores fixados em pontos exatos do loop: não mudam o que o agente faz, só avisam quando cada evento acontece. São ótimos para logging, auditoria e métricas.
 
 **Duas famílias:**
-- **`RunHooks`** — passado uma vez para o `Runner.run`/`run_sync`, enxerga o run inteiro, inclusive a troca de agente por handoff. Ex.: `on_llm_start(ctx, agent, system_prompt, input_items)` dispara antes de **cada** chamada ao modelo.
-- **`AgentHooks`** — `agent.hooks = ...` em cada `Agent`; amarrado a um agente só, útil quando cada especialista de um handoff precisa de um log diferente. **Atenção:** os nomes **não** são idênticos entre as duas famílias.
+- **`RunHooks`** — passado uma vez para o `Runner.run`/`run_sync`, enxerga o run inteiro, inclusive a troca de agente por handoff. Ex.: `on_llm_start(ctx, agent, system_prompt, input_items)` dispara antes de **cada** chamada ao modelo. *(arquivos: `agente_hook1.py`, `agente_hook2.py`)*
+- **`AgentHooks`** — `agent.hooks = ...` em cada `Agent`; amarrado a um agente só, útil quando cada especialista de um handoff precisa de um log diferente. **Atenção:** os nomes **não** são idênticos entre as duas famílias. *(arquivo: `agente_hook3.py`)*
 
-**Ordem de disparo (num turno com 1 ferramenta):** `RunHooks` e `AgentHooks` disparam em paralelo para o mesmo evento; a ordem documentada é **RunHook primeiro, depois AgentHook**.
+**Ordem de disparo (num turno com 1 ferramenta):** `RunHooks` e `AgentHooks` disparam em paralelo para o mesmo evento; a ordem documentada é **RunHook primeiro, depois AgentHook**. *(arquivo: `agente_hook3.py`)*
 
 **Exemplos:** `agente_hook1.py`, `agente_hook2.py` (exemplos do professor — `RunHooks`) e `agente_hook3.py` (`AgentHooks` via `agent.hooks = ...`, demonstrando a ordem **RUN → AGENTE** para o mesmo evento).
 
@@ -83,13 +83,13 @@ python -m aula3.agente_clima_vento
 
 ## 3. Critérios de Parada
 
-**Teoria.** Três formas diferentes de dizer "pare", como a um funcionário: um limite rígido de tentativas, ele mesmo declarar "terminei", ou um prazo de parede que ninguém pode estourar.
+**Teoria.** Três formas diferentes de dizer "pare", como a um funcionário: um limite rígido de tentativas, ele mesmo declarar "terminei", ou um prazo de parede que ninguém pode estourar. *(arquivos: `agente_parada.py`, `agente_parada_timeout.py`, `agente_parada_dupla.py`)*
 
-| Mecanismo | Onde roda | Problema que resolve |
-|---|---|---|
-| `max_turns` | **Dentro** do `Runner`, conta iterações do loop; dispara `MaxTurnsExceeded` | "o agente está preso repetindo ferramenta" |
-| Sucesso declarado | **Fora** do `Runner`, um loop externo chama `run_sync` várias vezes | terminar quando o agente declarar conclusão |
-| Timeout de parede | **Fora**, com `asyncio.wait_for` | nunca estourar um prazo real |
+| Mecanismo | Onde roda | Problema que resolve | Arquivo |
+|---|---|---|---|
+| `max_turns` | **Dentro** do `Runner`, conta iterações do loop; dispara `MaxTurnsExceeded` | "o agente está preso repetindo ferramenta" | `agente_loop_max.py` |
+| Sucesso declarado | **Fora** do `Runner`, um loop externo chama `run_sync` várias vezes | terminar quando o agente declarar conclusão | `agente_parada.py` |
+| Timeout de parede | **Fora**, com `asyncio.wait_for` | nunca estourar um prazo real | `agente_parada_timeout.py` |
 
 **Exercícios:**
 - **3.1 Sucesso declarado (loop externo com `output_type`):** um loop por fora chama `Runner.run_sync` várias vezes; é o próprio agente — via um campo booleano na saída (ex.: `concluido: bool`) — que declara que terminou. ✅ `agente_parada.py`
@@ -100,15 +100,15 @@ python -m aula3.agente_clima_vento
 
 ## 4. Retries e Resiliência
 
-**Teoria.** Uma ferramenta que falha é como um telefone que não atende: desligar na hora não resolve, mas discar sem parar também não. É preciso uma estratégia — esperar um pouco mais a cada tentativa, e nunca fazer a mesma tentativa repetida quando a ação **escreve** dados.
+**Teoria.** Uma ferramenta que falha é como um telefone que não atende: desligar na hora não resolve, mas discar sem parar também não. É preciso uma estratégia — esperar um pouco mais a cada tentativa, e nunca fazer a mesma tentativa repetida quando a ação **escreve** dados. *(arquivos: `agente_retry.py`, `agente_retry_idempotencia.py`)*
 
-**Backoff exponencial:** a ferramenta continua sendo uma função Python comum — o retry é só um `for` por dentro dela. O modelo nem sabe que houve tentativas: só vê o resultado final, ou o erro, se todas as tentativas falharem.
+**Backoff exponencial:** a ferramenta continua sendo uma função Python comum — o retry é só um `for` por dentro dela. O modelo nem sabe que houve tentativas: só vê o resultado final, ou o erro, se todas as tentativas falharem. *(arquivo: `agente_retry.py`)*
 
-**Retry sem idempotência é perigoso:** repetir uma **leitura** é seguro (o segundo resultado só substitui o primeiro); repetir uma **escrita** (registrar ocorrência, disparar ofício) nem sempre — pode causar dano. Por isso, **idempotência** é essencial.
+**Retry sem idempotência é perigoso:** repetir uma **leitura** é seguro (o segundo resultado só substitui o primeiro); repetir uma **escrita** (registrar ocorrência, disparar ofício) nem sempre — pode causar dano. Por isso, **idempotência** é essencial. *(arquivo: `agente_retry_idempotencia.py`)*
 
 **O modelo não tem relógio / nem cotação em tempo real:**
-- **Data:** injete a data real nas `instructions` (dá para calcular em Python).
-- **Cotação:** vem de fora do código e muda a cada minuto → injete por uma **ferramenta**.
+- **Data:** injete a data real nas `instructions` (dá para calcular em Python). *(arquivo: `agente_data.py`)*
+- **Cotação:** vem de fora do código e muda a cada minuto → injete por uma **ferramenta**. *(padrão de tool visto em `agente_retry.py`/`agente_loop.py`)*
 
 **Exercícios:**
 - **4.1 Retry manual com backoff exponencial:** implementar o retry com pausa crescente dentro da ferramenta. ✅ `agente_retry.py`
@@ -119,9 +119,9 @@ python -m aula3.agente_clima_vento
 
 ## 5. Autonomia e Freio Humano
 
-**Teoria.** É o "freio humano": um caixa que pode preparar um estorno, mas precisa da chave do supervisor antes da gaveta abrir. `needs_approval=True` faz literalmente isso: pausa a execução até alguém decidir.
+**Teoria.** É o "freio humano": um caixa que pode preparar um estorno, mas precisa da chave do supervisor antes da gaveta abrir. `needs_approval=True` faz literalmente isso: pausa a execução até alguém decidir. *(arquivo: `agente_aprovacao.py`)*
 
-**Mecânica:** a ferramenta continua uma função comum — `needs_approval` é só um parâmetro a mais no decorator. O loop `while resultado.interruptions:` é o "laço de aprovação": ele só continua quando a aprovação é dada.
+**Mecânica:** a ferramenta continua uma função comum — `needs_approval` é só um parâmetro a mais no decorator. O loop `while resultado.interruptions:` é o "laço de aprovação": ele só continua quando a aprovação é dada. *(arquivo: `agente_aprovacao.py`)*
 
 **Autonomia graduada (um só mecanismo, três níveis):**
 | Nível | Comportamento | Quando usar |
@@ -129,6 +129,8 @@ python -m aula3.agente_clima_vento
 | Sem `needs_approval` | a ferramenta roda livre | seguro repetir, sem efeito consequente (leituras, cálculos) |
 | `needs_approval=True` | pausa **sempre**, independente do argumento | ações consequentes |
 | Aprovação condicional / `always_approve` | decide no código quando pausar | ação sensível só em certos casos |
+
+*(todos os níveis em `agente_aprovacao.py`)*
 
 **Exercícios:**
 - **5.1 `needs_approval=True` (pausa sempre):** implementar o "laço de aprovação" com `while resultado.interruptions`. ✅ `agente_aprovacao.py`
@@ -139,13 +141,13 @@ python -m aula3.agente_clima_vento
 
 ## 6. Observando o Loop ao Vivo (Streaming)
 
-**Teoria.** Em vez de esperar o relatório do funcionário no fim do expediente (hooks), acompanha-se cada decisão e cada token **ao vivo**, enquanto o loop roda.
+**Teoria.** Em vez de esperar o relatório do funcionário no fim do expediente (hooks), acompanha-se cada decisão e cada token **ao vivo**, enquanto o loop roda. *(arquivo: `agente_loop_stream.py`)*
 
 **Hooks vs Streaming:**
-- **Hooks** — você define uma classe, o SDK chama os métodos sozinho. Bom para logging, auditoria, métricas (coisas que rodam por fora, sem UI acoplada).
-- **Streaming** — você itera um `async for` e decide o que fazer com cada evento. Bom para UI ao vivo.
+- **Hooks** — você define uma classe, o SDK chama os métodos sozinho. Bom para logging, auditoria, métricas (coisas que rodam por fora, sem UI acoplada). *(arquivos: `agente_hook1.py`, `agente_hook2.py`, `agente_hook3.py`)*
+- **Streaming** — você itera um `async for` e decide o que fazer com cada evento. Bom para UI ao vivo. *(arquivo: `agente_loop_stream.py`)*
 
-**Tipos de evento (de novo):** `run_item_stream_event` avisa cada ferramenta chamada/resultado (o mesmo que `on_tool_start`/`on_tool_end` faziam via hooks); `raw_response_event` entrega os tokens de texto.
+**Tipos de evento (de novo):** `run_item_stream_event` avisa cada ferramenta chamada/resultado (o mesmo que `on_tool_start`/`on_tool_end` faziam via hooks); `raw_response_event` entrega os tokens de texto. *(arquivo: `agente_loop_stream.py`)*
 
 **Exercícios:**
 - **6.1 Contar turnos e ver tokens ao mesmo tempo:** um único `async for` cobre as duas coisas. ✅ `agente_loop_stream.py`
@@ -156,14 +158,16 @@ python -m aula3.agente_clima_vento
 
 ## 7. Loop com Decisões Encadeadas
 
-**Teoria.** O "investigador que não segue um roteiro fixo": decide, caso a caso, qual sistema consultar primeiro conforme o que já sabe, e para assim que julga ter o suficiente. Nenhum fluxograma escrito à mão decide por ele.
+**Teoria.** O "investigador que não segue um roteiro fixo": decide, caso a caso, qual sistema consultar primeiro conforme o que já sabe, e para assim que julga ter o suficiente. Nenhum fluxograma escrito à mão decide por ele. *(arquivo: `agente_investigador.py`)*
 
-**Duas fontes reais, uma decisão do modelo:** `consultar_cnpj` e `consultar_ddd` são duas ferramentas independentes, sem relação escrita no código. Quem decide chamar uma, a outra, ou as duas — e em que ordem — é o modelo.
+**Duas fontes reais, uma decisão do modelo:** `consultar_cnpj` e `consultar_ddd` são duas ferramentas independentes, sem relação escrita no código. Quem decide chamar uma, a outra, ou as duas — e em que ordem — é o modelo. *(arquivo: `agente_investigador.py`)*
 
 **O que estava embutido nesta seção (cada peça já vista, agora somada):**
 - Várias tools independentes (Aula 1) — o modelo decide sozinho quais usar.
 - Contagem de turno via hooks (Seção 1) — para ver a ordem das decisões acontecendo.
 - Escalada/estratégia de erro (Seção 4) — retry e idempotência.
+
+*(tudo em `agente_investigador.py`)*
 
 **Exercícios:**
 - **7.1 Duas fontes, uma decisão:** `consultar_cnpj` + `consultar_ddd`, e observar a ordem que o modelo escolhe. ✅ `agente_investigador.py`
@@ -174,11 +178,11 @@ python -m aula3.agente_clima_vento
 
 ## 8. Resumo dos Conceitos-Chave
 
-- **Observar:** hooks (logging/auditoria/métricas) e streaming (UI ao vivo).
-- **Parar:** `max_turns` (dentro), sucesso declarado via `output_type` (fora), timeout de parede (`asyncio.wait_for`).
-- **Sobreviver:** backoff exponencial + idempotência para escritas; injetar dado real (data via instructions, cotação via tool).
-- **Frear:** `needs_approval` com autonomia graduada (livre / pausa sempre / condicional).
-- **Decidir em cadeia:** múltiplas tools independentes, ordem escolhida pelo modelo, turno a turno.
+- **Observar:** hooks (logging/auditoria/métricas) e streaming (UI ao vivo). *(`agente_hook*.py`, `agente_loop_stream.py`)*
+- **Parar:** `max_turns` (dentro), sucesso declarado via `output_type` (fora), timeout de parede (`asyncio.wait_for`). *(`agente_loop_max.py`, `agente_parada.py`, `agente_parada_timeout.py`)*
+- **Sobreviver:** backoff exponencial + idempotência para escritas; injetar dado real (data via instructions, cotação via tool). *(`agente_retry.py`, `agente_retry_idempotencia.py`, `agente_data.py`)*
+- **Frear:** `needs_approval` com autonomia graduada (livre / pausa sempre / condicional). *(`agente_aprovacao.py`)*
+- **Decidir em cadeia:** múltiplas tools independentes, ordem escolhida pelo modelo, turno a turno. *(`agente_investigador.py`)*
 
 ---
 
