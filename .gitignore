@@ -37,6 +37,8 @@ Thumbs.db
 logs/
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 *.db-journal
 
 # Dependency folders

@@ -3,6 +3,8 @@
 
 Esta aula consolida os conceitos teóricos e a engenharia de software por trás do ciclo inicial da disciplina. O objetivo é compreender o que transforma um modelo de linguagem em um agente autônomo, como desacoplar provedores de inferência e como evoluir da simples geração textual para a execução determinística de ferramentas externas (*Tool Calling*).
 
+> **Estrutura do repo (a partir desta versão):** a infraestrutura foi **centralizada na raiz** do curso — `provedor.py`, `requirements.txt`, `.env` e a `venv` ficam na pasta `11_Sistem_MultiAgentes`. Cada `aulaN` é um pacote (com `__init__.py`), então os exemplos rodam **da raiz** como `python -m aulaN.arquivo`. Os `from provedor import ...` continuam funcionando porque a raiz está no `sys.path` quando se roda com `-m`.
+
 ---
 
 ## 1. O que Diferencia um LLM de um Agente de IA?

@@ -284,24 +284,26 @@ def extrair_output(pergunta: Pergunta):
 
 ## 7. Como Testar
 
+> **Estrutura do repo:** a infraestrutura é compartilhada na raiz (`provedor.py`, `requirements.txt`, `.env`). Rode tudo **da raiz** do curso, com a `venv` da raiz ativada. Cada `aulaN` é um pacote (tem `__init__.py`), então os exemplos rodam como `python -m aulaN.arquivo` e a API como `uvicorn aula2.main:app`.
+
 ```bash
 # 1) Testar o agente único
-python -c "from primeiro_agente import executar_agente; print(executar_agente('Qual é a capital do Brasil?'))"
+python -c "from aula2.primeiro_agente import executar_agente; print(executar_agente('Qual é a capital do Brasil?'))"
 
 # 2) Testar o handoff (delegação de turno)
-python -c "from agente_handoff import executar_agente_handoff; print(executar_agente_handoff('Quanto é 7 vezes 8?'))"
+python -c "from aula2.agente_handoff import executar_agente_handoff; print(executar_agente_handoff('Quanto é 7 vezes 8?'))"
 
 # 3) Testar o agente como ferramenta
-python -c "from agente_handoff2 import executar_agente_handoff2; print(executar_agente_handoff2('Em que ano foi a independência do Brasil?'))"
+python -c "from aula2.agente_handoff2 import executar_agente_handoff2; print(executar_agente_handoff2('Em que ano foi a independência do Brasil?'))"
 
 # 4) Testar a extração estruturada (agente_bo)
-python -c "from agente_bo import extrair_ocorrencia; print(extrair_ocorrencia('No dia 28/09, ocorreu um furto de veículo. A vítima, Camila Rodrigues, ...').model_dump_json(indent=2))"
+python -c "from aula2.agente_bo import extrair_ocorrencia; print(extrair_ocorrencia('No dia 28/09, ocorreu um furto de veículo. A vítima, Camila Rodrigues, ...').model_dump_json(indent=2))"
 
 # 5) Testar a extração estruturada de evento (agente_output)
-python -c "from agente_output import executar_agente_output; print(executar_agente_output('A reunião de planejamento será dia 15/10 na Enap, em Brasília, com 12 pessoas.').model_dump_json(indent=2))"
+python -c "from aula2.agente_output import executar_agente_output; print(executar_agente_output('A reunião de planejamento será dia 15/10 na Enap, em Brasília, com 12 pessoas.').model_dump_json(indent=2))"
 
-# 6) Subir a API
-uvicorn main:app --reload
+# 6) Subir a API (a partir da raiz)
+uvicorn aula2.main:app --reload
 # em outro terminal:
 curl -X POST http://127.0.0.1:8000/tools -H "Content-Type: application/json" -d '{"mensagem":"Quem descobriu o Brasil?"}'
 curl -X POST http://127.0.0.1:8000/handoff -H "Content-Type: application/json" -d '{"mensagem":"Quanto é 9 vezes 6?"}'
@@ -312,20 +314,20 @@ curl -X POST http://127.0.0.1:8000/memoria -H "Content-Type: application/json" -
 curl -X POST http://127.0.0.1:8000/memoria -H "Content-Type: application/json" -d '{"mensagem":"E qual é a população?","sessao_id":"caso_a"}'
 ```
 
-**Demos das seções 5–9** (executar direto):
+**Demos das seções 5–9** (executar direto, da raiz):
 
 ```bash
-python agente_session.py        # memória entre turnos (arquivo)
-python agente_sessao2.py        # memória + clima (comparação no 3º turno)
-python agente_isolamento.py     # isolamento entre sessões (5.3)
-python agente_coleta.py         # coleta progressiva (5.4)
-python agente_triagem.py        # output_type com Literal + bool (4.3)
-python agente_guardrail.py      # input guardrail com LLM (6.2)
-python agente_output_guardrail.py  # output guardrail regex CPF (6.3)
-python agente_streaming.py      # streaming (7.1-7.3)
-python agente_integrador.py     # integrador (8)
-python agente_handoff_callback.py  # handoff + callback (3.2)
-python agente_producao.py       # max_turns + prompt injection (9)
+python -m aula2.agente_session        # memória entre turnos (arquivo)
+python -m aula2.agente_sessao2        # memória + clima (comparação no 3º turno)
+python -m aula2.agente_isolamento     # isolamento entre sessões (5.3)
+python -m aula2.agente_coleta         # coleta progressiva (5.4)
+python -m aula2.agente_triagem        # output_type com Literal + bool (4.3)
+python -m aula2.agente_guardrail      # input guardrail com LLM (6.2)
+python -m aula2.agente_output_guardrail  # output guardrail regex CPF (6.3)
+python -m aula2.agente_streaming      # streaming (7.1-7.3)
+python -m aula2.agente_integrador     # integrador (8)
+python -m aula2.agente_handoff_callback  # handoff + callback (3.2)
+python -m aula2.agente_producao       # max_turns + prompt injection (9)
 ```
 
 ---

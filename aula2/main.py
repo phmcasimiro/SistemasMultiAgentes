@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from fastapi import FastAPI
 
-from primeiro_agente import executar_agente
-from agente_handoff import executar_agente_handoff
-from agente_handoff2 import executar_agente_handoff2
-from agente_bo import extrair_ocorrencia
-from agente_output import executar_agente_output
-from agente_memoria import executar_agente_memoria
+from .primeiro_agente import executar_agente
+from .agente_handoff import executar_agente_handoff
+from .agente_handoff2 import executar_agente_handoff2
+from .agente_bo import extrair_ocorrencia
+from .agente_output import executar_agente_output
+from .agente_memoria import executar_agente_memoria
 
 app = FastAPI()
 
