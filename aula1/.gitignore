@@ -1,0 +1,57 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+venv/
+.venv/
+ENV/
+env/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and runtime artifacts
+*.log
+logs/
+*.sqlite3
+*.db
+*.db-journal
+
+# Dependency folders
+node_modules/
+.venv/
+
+# Build / dist
+build/
+dist/
+out/
+coverage/
+htmlcov/
+
+# OS files
+*.orig
+
+# Material do professor (decks/apostilas) — não versionar no repo
+*.pdf
